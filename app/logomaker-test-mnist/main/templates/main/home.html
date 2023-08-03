@@ -1,0 +1,20 @@
+{% extends 'main/base.html' %}
+{% block page_content %}
+  <div class="container">
+    <h1>AI Webserver Test</h1>
+    <p>MNIST 숫자 인식 모델 테스트</p>
+    <canvas id="canvas" width="280" height="280"></canvas>
+    <br />
+    <button id="clear">초기화</button>
+    <button id="btn">예 측</button>
+    <div></div>
+    <canvas id="canvas28" width="28" height="28" hidden></canvas>
+    <p id="predict">예측 결과</p>
+    {% for i in 'x'|rjust:'3' %}
+      <div>
+        <span class="index" id="result-index{{ forloop.counter }}">?</span>
+        <span id="result-value{{ forloop.counter }}">(?%)</span>
+      </div>
+    {% endfor %}
+  </div>
+{% endblock %}
