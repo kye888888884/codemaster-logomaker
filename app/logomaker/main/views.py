@@ -6,6 +6,8 @@ import numpy as np
 import io
 import torch
 from PIL import Image
+import json
+from .pipeline import *
 
 TOP_K = 3
 np.set_printoptions(suppress=True)
@@ -29,31 +31,37 @@ def process_image(imageFile):
 def home(request):
     return render(request, "main/home.html")
 
-def mnist(request):
+def generate(request):
     if request.method == "POST":
-        # Get formData
-        imageFile = request.POST.get("image_data", "")
-        # Process image
-        img = process_image(imageFile)
+        # Get text data from post request
+        jsonObject = json.loads(request.body)
+        text = jsonObject.get("text")
 
-        pred_num = MainConfig.deepmodel.predict(img)
-        pred_num = pred_num.numpy()
-        # 소수점 3자리까지 표시
-        pred_num = np.round(pred_num, 4)
-        # pred_num 배열에서 상위 K개의 인덱스를 가져온다.
-        top_index = np.argsort(pred_num)[0][::-1][:TOP_K]
-        # 상위 K개의 값
-        top_value = pred_num[0][top_index]
-        print(top_index, top_value)
+        # Get image data from text with VQGAN-CLIP
+        img = inference(
+            text = text, 
+            seed = 2,
+            step_size = 0.12,
+            max_iterations = 200,
+            width = 512,
+            height = 512,
+            init_image = '',
+            init_weight = 0.004,
+            target_images = '', 
+            cutn = 64,
+            cut_pow = 0.3,
+            video_file = "test1"
+        )
+        npImage = display_result(img)
+        # 
+        # numpy 배열을 이미지로 변환
+        npImage = Image.fromarray(npImage.astype(np.uint8))
+        # 이미지를 base64로 인코딩
+        buffer = io.BytesIO()
+        npImage.save(buffer, format="JPEG")
+        new_image_string = base64.b64encode(buffer.getvalue()).decode("utf-8")
+        out_string = "data:image/jpeg;base64," + new_image_string
 
-        res = {
-            str(x): {
-                "index": str(top_index[x]),
-                "value": str(top_value[x]),
-            }
-            for x in range(TOP_K)
-        }
-
-        return JsonResponse(res)
+        return JsonResponse({"image": out_string})
     else:
         return render(request, "main/home.html")
